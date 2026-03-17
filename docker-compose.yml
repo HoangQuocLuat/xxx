@@ -1,0 +1,43 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: demo
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_vol:/var/lib/mysql
+      - ./php-service/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  php-service:
+    build: ./php-service
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: mysql
+      DB_NAME: demo
+      DB_USER: root
+      DB_PASS: root
+    volumes:
+      - logs_vol:/var/www/storage/logs
+      - php_src:/var/www
+
+  ai-monitor:
+    build: ./ai-monitor
+    depends_on:
+      - php-service
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      LOG_PATH: /shared/logs
+      PHP_SRC: /shared/src
+    volumes:
+      - logs_vol:/shared/logs
+      - php_src:/shared/src
+
+volumes:
+  logs_vol:
+  php_src:
+  mysql_vol:
